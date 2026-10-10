@@ -34,8 +34,8 @@ from the bedside box onto the double bed and the **cushion was removed** from th
 | Cushion removed | **removed** | 0.59 × 0.76 × 0.16 m box on the single bed |
 | Everything else | 10 proposals **rejected** | wall, floor, ceiling fan, bed frame, a backpack visible in both videos… (listed in the report) |
 
-**Interactive 3D report**: [`examples/room01/output/report.html`](examples/room01/output/report.html) (a single
-self-contained file: download it and open it in a browser). Red = removed, green = added, orange arrow = moved;
+**Interactive 3D report**: [open it in your browser](https://raw.githack.com/hackdavid/scene-change-3d/main/examples/room01/output/report.html)
+(source: [`examples/room01/output/report.html`](examples/room01/output/report.html), a single self-contained file). Red = removed, green = added, orange arrow = moved;
 click an event card to see its before/after evidence.
 
 ![3D report](examples/room01/output/report.png)
