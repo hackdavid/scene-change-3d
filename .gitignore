@@ -5,3 +5,4 @@ data/
 out/
 bench_out/
 examples/*/original/
+.env
