@@ -1,0 +1,490 @@
+{
+  "summary": "The laptop moved 1.20 m: from on a surface about 0.5 m above the floor (x=-1.94, y=0.31) to on a surface about 0.5 m above the floor (x=-0.74, y=0.24). A pillow was removed from on a surface about 0.5 m above the floor (x=0.11, y=1.76, size 0.59x0.76x0.16 m).",
+  "events": [
+    {
+      "type": "moved",
+      "label": "laptop",
+      "from_object": "c3",
+      "to_object": "c1",
+      "from": {
+        "center": [
+          -1.94,
+          0.31,
+          0.45
+        ],
+        "size": [
+          0.9,
+          2.18,
+          0.27
+        ],
+        "min": [
+          -2.39,
+          -0.78,
+          0.32
+        ],
+        "max": [
+          -1.49,
+          1.4,
+          0.58
+        ]
+      },
+      "to": {
+        "center": [
+          -0.74,
+          0.24,
+          0.47
+        ],
+        "size": [
+          0.44,
+          0.36,
+          0.16
+        ],
+        "min": [
+          -0.97,
+          0.06,
+          0.39
+        ],
+        "max": [
+          -0.52,
+          0.43,
+          0.56
+        ]
+      },
+      "displacement_m": 1.2,
+      "confidence": 0.95,
+      "description": "Before: A laptop computer is open and positioned on top of the cardboard box in the BEFORE images, but is absent from that spot in the AFTER images. After: The spot on the bed shows only floral patterned bedding in the BEFORE images, while a laptop computer appears at that location in the AFTER images.",
+      "match": {
+        "appearance_similarity": 0.776,
+        "identity_check": "The same silver laptop that was on the cardboard box in the first image is now placed directly on the floral bedspread in the second image.",
+        "size_ratio": 4.91,
+        "icp_fitness": 0.047,
+        "icp_rmse_m": 0.025
+      },
+      "from_evidence": {
+        "before": "evidence/c3_before.jpg",
+        "before_frame": "before_03800.png",
+        "after": "evidence/c3_after.jpg",
+        "after_frame": "after_06600.png"
+      },
+      "to_evidence": {
+        "before": "evidence/c1_before.jpg",
+        "before_frame": "before_05000.png",
+        "after": "evidence/c1_after.jpg",
+        "after_frame": "after_06600.png"
+      },
+      "id": "E1",
+      "support": {
+        "points": 10446,
+        "views": 19
+      }
+    },
+    {
+      "type": "removed",
+      "label": "pillow",
+      "object": "c0",
+      "region": {
+        "center": [
+          0.11,
+          1.76,
+          0.51
+        ],
+        "size": [
+          0.59,
+          0.76,
+          0.16
+        ],
+        "min": [
+          -0.19,
+          1.37,
+          0.43
+        ],
+        "max": [
+          0.4,
+          2.14,
+          0.59
+        ]
+      },
+      "confidence": 0.85,
+      "description": "A decorative pillow with a red/maroon border pattern is present on the bed in the BEFORE images but is absent in the AFTER images.",
+      "evidence": {
+        "before": "evidence/c0_before.jpg",
+        "before_frame": "before_00200.png",
+        "after": "evidence/c0_after.jpg",
+        "after_frame": "after_01600.png"
+      },
+      "id": "E2",
+      "support": {
+        "points": 4870,
+        "views": 5
+      }
+    }
+  ],
+  "rejected": [
+    {
+      "id": "c2",
+      "kind": "gone",
+      "label": "fan",
+      "region": {
+        "center": [
+          -3.37,
+          1.93,
+          0.6
+        ],
+        "size": [
+          0.45,
+          0.79,
+          0.6
+        ],
+        "min": [
+          -3.6,
+          1.54,
+          0.3
+        ],
+        "max": [
+          -3.15,
+          2.32,
+          0.9
+        ]
+      },
+      "reason": "A standing floor fan is visible at that spot in both the BEFORE and AFTER images.",
+      "clip_before_after_similarity": 0.856
+    },
+    {
+      "id": "c4",
+      "kind": "new",
+      "label": "ceiling",
+      "region": {
+        "center": [
+          -3.12,
+          1.53,
+          1.15
+        ],
+        "size": [
+          0.27,
+          0.38,
+          0.25
+        ],
+        "min": [
+          -3.26,
+          1.34,
+          1.02
+        ],
+        "max": [
+          -2.99,
+          1.72,
+          1.27
+        ]
+      },
+      "reason": "The ceiling and upper portion of a standing fan are visible at that spot in both before and after images.",
+      "clip_before_after_similarity": 0.841
+    },
+    {
+      "id": "c5",
+      "kind": "new",
+      "label": "bag",
+      "region": {
+        "center": [
+          -3.36,
+          0.3,
+          0.53
+        ],
+        "size": [
+          0.34,
+          1.0,
+          0.2
+        ],
+        "min": [
+          -3.53,
+          -0.2,
+          0.43
+        ],
+        "max": [
+          -3.19,
+          0.8,
+          0.63
+        ]
+      },
+      "reason": "A black backpack is visible at that spot in both the before and after images.",
+      "clip_before_after_similarity": 0.92
+    },
+    {
+      "id": "c6",
+      "kind": "new",
+      "label": "blanket",
+      "region": {
+        "center": [
+          -0.44,
+          0.83,
+          0.5
+        ],
+        "size": [
+          0.11,
+          0.39,
+          0.2
+        ],
+        "min": [
+          -0.49,
+          0.64,
+          0.4
+        ],
+        "max": [
+          -0.39,
+          1.03,
+          0.59
+        ]
+      },
+      "reason": "A folded blanket with green and cream pattern remains on the white bench in both before and after images.",
+      "clip_before_after_similarity": 0.953
+    },
+    {
+      "id": "c7",
+      "kind": "new",
+      "label": "bed",
+      "region": {
+        "center": [
+          -0.98,
+          1.97,
+          0.46
+        ],
+        "size": [
+          0.47,
+          1.0,
+          0.25
+        ],
+        "min": [
+          -1.21,
+          1.48,
+          0.33
+        ],
+        "max": [
+          -0.74,
+          2.47,
+          0.58
+        ]
+      },
+      "reason": "A white bed frame with a patterned mattress is visible at that spot in both before and after images.",
+      "clip_before_after_similarity": 0.982
+    },
+    {
+      "id": "c8",
+      "kind": "new",
+      "label": "floor",
+      "region": {
+        "center": [
+          -3.19,
+          2.56,
+          0.05
+        ],
+        "size": [
+          0.49,
+          0.36,
+          0.16
+        ],
+        "min": [
+          -3.43,
+          2.38,
+          -0.03
+        ],
+        "max": [
+          -2.94,
+          2.74,
+          0.13
+        ]
+      },
+      "reason": "The yellow box shows the same wooden floor area in both before and after videos, with a dark fabric or blanket visible at the edge in both cases.",
+      "clip_before_after_similarity": 0.957
+    },
+    {
+      "id": "c9",
+      "kind": "new",
+      "label": "backpack",
+      "region": {
+        "center": [
+          -3.26,
+          -0.48,
+          0.47
+        ],
+        "size": [
+          0.14,
+          0.23,
+          0.12
+        ],
+        "min": [
+          -3.34,
+          -0.59,
+          0.41
+        ],
+        "max": [
+          -3.19,
+          -0.36,
+          0.53
+        ]
+      },
+      "reason": "A black backpack is visible at that spot in both the BEFORE and AFTER images.",
+      "clip_before_after_similarity": 0.903
+    },
+    {
+      "id": "c10",
+      "kind": "new",
+      "label": "bed frame",
+      "region": {
+        "center": [
+          -1.83,
+          2.33,
+          0.33
+        ],
+        "size": [
+          0.43,
+          0.27,
+          0.06
+        ],
+        "min": [
+          -2.05,
+          2.19,
+          0.3
+        ],
+        "max": [
+          -1.61,
+          2.47,
+          0.36
+        ]
+      },
+      "reason": "The yellow box shows the same bed frame edge and bedding with polka dot pattern in both before and after images.",
+      "clip_before_after_similarity": 0.943
+    },
+    {
+      "id": "c11",
+      "kind": "new",
+      "label": "wall-mounted shelf",
+      "region": {
+        "center": [
+          -3.45,
+          0.44,
+          0.97
+        ],
+        "size": [
+          0.17,
+          0.31,
+          0.08
+        ],
+        "min": [
+          -3.54,
+          0.28,
+          0.93
+        ],
+        "max": [
+          -3.36,
+          0.6,
+          1.01
+        ]
+      },
+      "reason": "A small wooden wall-mounted shelf or organizer with compartments is visible at that spot in both the before and after images.",
+      "clip_before_after_similarity": 0.837
+    },
+    {
+      "id": "c12",
+      "kind": "new",
+      "label": "laptop",
+      "region": {
+        "center": [
+          -0.87,
+          0.34,
+          0.53
+        ],
+        "size": [
+          0.18,
+          0.12,
+          0.06
+        ],
+        "min": [
+          -0.97,
+          0.28,
+          0.5
+        ],
+        "max": [
+          -0.78,
+          0.4,
+          0.56
+        ]
+      },
+      "reason": "same laptop as c1 (merged into one event)",
+      "clip_before_after_similarity": 0.939
+    },
+    {
+      "id": "c13",
+      "kind": "new",
+      "label": "headphones",
+      "region": {
+        "center": [
+          -2.2,
+          -0.87,
+          0.88
+        ],
+        "size": [
+          0.2,
+          0.09,
+          0.16
+        ],
+        "min": [
+          -2.3,
+          -0.91,
+          0.79
+        ],
+        "max": [
+          -2.1,
+          -0.82,
+          0.96
+        ]
+      },
+      "reason": "A blue/teal headset is hanging on the wall in the same spot in both before and after images.",
+      "clip_before_after_similarity": 0.867
+    }
+  ],
+  "coordinate_frame": "metres; z up from the detected floor plane (z=0); x/y horizontal",
+  "run": {
+    "before": "examples/room01/before.mp4",
+    "after": "examples/room01/after.mp4",
+    "device": "cpu",
+    "semantics": "vlm",
+    "labeller": "azure_ai/claude-sonnet-4-5",
+    "keyframes": {
+      "before": 19,
+      "after": 20,
+      "unregistered": []
+    },
+    "floor": {
+      "up_axis": "largest horizontal RANSAC plane",
+      "floor": "lowest dense horizontal layer",
+      "tilt_from_camera_up_deg": 11.911768514778139
+    },
+    "timings_s": {
+      "sfm_features_s": 1.3,
+      "sfm_matching_s": 1.2,
+      "sfm_mapping_s": 9.3,
+      "sfm_num_models": 2,
+      "depth_model_load_s": 5.7,
+      "depth_inference_s": 11.2,
+      "depth_per_frame_s": 0.3,
+      "keyframes_s": 1.6,
+      "reconstruction_s": 30.7,
+      "change_detection_s": 5.1,
+      "semantics_s": 51.8,
+      "total_s": 91.6
+    },
+    "peak_rss_mb": 2025,
+    "points": {
+      "before": {
+        "static": 350606,
+        "changed": 11113,
+        "occluded": 98503,
+        "unobserved": 19581
+      },
+      "after": {
+        "static": 393542,
+        "changed": 14797,
+        "occluded": 69834,
+        "unobserved": 24767
+      }
+    }
+  }
+}

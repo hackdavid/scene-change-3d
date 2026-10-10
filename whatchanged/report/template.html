@@ -1,0 +1,93 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>What changed in the room?</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#111;color:#eee;display:flex;height:100vh}
+#view{flex:1;position:relative}#side{width:380px;overflow:auto;padding:14px;background:#1b1b1f;box-sizing:border-box}
+h1{font-size:18px;margin:0 0 6px}p.sum{font-size:13px;line-height:1.45;color:#ccc}
+.ev{border:1px solid #333;border-radius:8px;padding:8px;margin:10px 0;cursor:pointer}.ev:hover{border-color:#888}
+.ev h3{margin:0 0 4px;font-size:15px}.tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:12px;margin-right:6px}
+.removed{background:#e63c3c}.added{background:#3cc85a;color:#000}.moved{background:#ff961e;color:#000}
+.ev img{width:49%;border-radius:4px}.ev small{color:#aaa;display:block;margin:3px 0}
+#ctl{position:absolute;top:10px;left:10px;background:#000a;padding:8px;border-radius:6px;font-size:13px}
+#ctl label{margin-right:10px}details{font-size:12px;color:#aaa;margin-top:12px}
+</style></head><body>
+<div id="view"><div id="ctl">
+<label><input type="radio" name="l" value="before"> before</label>
+<label><input type="radio" name="l" value="after"> after</label>
+<label><input type="radio" name="l" value="both" checked> both</label>
+<label><input type="checkbox" id="boxes" checked> change boxes</label>
+<label><input type="checkbox" id="camsT"> cameras</label>
+<div style="margin-top:4px;color:#aaa">red = removed (before), green = added (after), orange arrow = moved. Drag to orbit.</div>
+</div></div>
+<div id="side"><h1>What changed in the room?</h1><p class="sum" id="sum"></p><div id="events"></div>
+<details><summary>Rejected proposals (geometry flagged, semantics/visibility rejected)</summary><div id="rej"></div></details>
+<details><summary>Run info</summary><pre id="info" style="white-space:pre-wrap"></pre></details></div>
+<script id="three-src" type="text/plain">/*THREE_SRC*/</script>
+<script id="orbit-src" type="text/plain">/*ORBIT_SRC*/</script>
+<script id="data" type="application/json">/*DATA*/</script>
+<script type="module">
+const blob = s => URL.createObjectURL(new Blob([s], {type: 'text/javascript'}));
+const threeUrl = blob(document.getElementById('three-src').textContent);
+const orbitSrc = document.getElementById('orbit-src').textContent.replace(/from\s*['"]three['"]/g, `from '${threeUrl}'`);
+const THREE = await import(threeUrl);
+const {OrbitControls} = await import(blob(orbitSrc));
+const D = JSON.parse(document.getElementById('data').textContent);
+const R = D.result;
+const b64 = (s, T) => { const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return new T(a.buffer); };
+const el = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({antialias: true}); renderer.setPixelRatio(devicePixelRatio);
+el.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x111111);
+const camera = new THREE.PerspectiveCamera(60, 1, 0.01, 100); camera.up.set(0, 0, 1);
+const controls = new OrbitControls(camera, renderer.domElement);
+function cloud(p, size) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(b64(p.xyz, Float32Array), 3));
+  g.setAttribute('color', new THREE.BufferAttribute(b64(p.rgb, Uint8Array), 3, true));
+  return new THREE.Points(g, new THREE.PointsMaterial({size, vertexColors: true}));
+}
+const layers = {before: cloud(D.layers.before, 0.012), after: cloud(D.layers.after, 0.012)};
+Object.values(layers).forEach(o => scene.add(o));
+const changeGroup = new THREE.Group(); scene.add(changeGroup);
+D.changed.forEach(c => changeGroup.add(cloud(c, 0.02)));
+const col = {removed: 0xe63c3c, added: 0x3cc85a, moved: 0xff961e};
+function box(r, c) {
+  const s = r.size, m = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s[0], s[1], s[2])),
+    new THREE.LineBasicMaterial({color: c})); m.position.set(...r.center); return m;
+}
+const focus = {};
+R.events.forEach(e => {
+  if (e.type === 'moved') {
+    changeGroup.add(box(e.from, col.removed)); changeGroup.add(box(e.to, col.added));
+    const a = new THREE.Vector3(...e.from.center), b = new THREE.Vector3(...e.to.center), d = b.clone().sub(a);
+    changeGroup.add(new THREE.ArrowHelper(d.clone().normalize(), a, d.length(), col.moved, 0.15, 0.08));
+    focus[e.id] = a.clone().add(b).multiplyScalar(0.5);
+  } else { changeGroup.add(box(e.region, col[e.type])); focus[e.id] = new THREE.Vector3(...e.region.center); }
+});
+const camGroup = new THREE.Group(); camGroup.visible = false; scene.add(camGroup);
+D.cams.forEach(c => { const o = new THREE.Vector3(...c.c);
+  camGroup.add(new THREE.ArrowHelper(new THREE.Vector3(...c.f), o, 0.25, c.video === 'before' ? 0x6a8cff : 0x33d0d0, 0.08, 0.05)); });
+const all = new THREE.Box3().setFromObject(layers.before); const ctr = all.getCenter(new THREE.Vector3());
+const sz = all.getSize(new THREE.Vector3()); camera.position.set(ctr.x, ctr.y - 0.6 * sz.y, ctr.z + 0.9 * Math.max(sz.x, sz.y)); controls.target.copy(ctr); controls.update();
+function goTo(id) { const t = focus[id]; controls.target.copy(t);
+  camera.position.copy(t.clone().add(camera.position.clone().sub(t).normalize().multiplyScalar(2.0))); controls.update(); }
+document.querySelectorAll('input[name=l]').forEach(r => r.onchange = () => {
+  layers.before.visible = r.value !== 'after'; layers.after.visible = r.value !== 'before'; });
+document.getElementById('boxes').onchange = e => changeGroup.visible = e.target.checked;
+document.getElementById('camsT').onchange = e => camGroup.visible = e.target.checked;
+document.getElementById('sum').textContent = R.summary;
+const img = f => f ? `<img src="${D.evidence[f]}">` : '';
+document.getElementById('events').innerHTML = R.events.map(e => {
+  const ev = e.type === 'moved' ? [e.from_evidence, e.to_evidence] : [e.evidence];
+  const det = e.type === 'moved' ? `${e.displacement_m.toFixed(2)} m &middot; identity: ${e.match.identity_check}` :
+    `size ${e.region.size.map(x => x.toFixed(2)).join(' x ')} m`;
+  return `<div class="ev" data-id="${e.id}"><h3><span class="tag ${e.type}">${e.type}</span>${e.label}</h3>
+  <small>${det} &middot; confidence ${e.confidence.toFixed(2)}</small><small>${e.description}</small>
+  ${ev.map(x => `<div><small>before | after</small>${img(x.before)} ${img(x.after)}</div>`).join('')}</div>`; }).join('');
+document.querySelectorAll('.ev').forEach(d => d.onclick = () => goTo(d.dataset.id));
+document.getElementById('rej').innerHTML = R.rejected.map(r => `<div>${r.id} (${r.kind}): ${r.label} — ${r.reason}</div>`).join('');
+document.getElementById('info').textContent = JSON.stringify(R.run, null, 1);
+function resize() { const w = el.clientWidth, h = el.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+renderer.setAnimationLoop(() => renderer.render(scene, camera));
+</script></body></html>

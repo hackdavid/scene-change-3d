@@ -1,0 +1,1 @@
+The laptop moved 1.20 m: from on a surface about 0.5 m above the floor (x=-1.94, y=0.31) to on a surface about 0.5 m above the floor (x=-0.74, y=0.24). A pillow was removed from on a surface about 0.5 m above the floor (x=0.11, y=1.76, size 0.59x0.76x0.16 m).

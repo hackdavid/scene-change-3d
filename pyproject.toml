@@ -1,0 +1,33 @@
+[project]
+name = "whatchanged"
+version = "0.1.0"
+description = "Visibility-aware 3D change detection from two phone videos (CPU-first)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy",
+    "scipy",
+    "opencv-python-headless",
+    "open3d",
+    "pycolmap",
+    "torch",
+    "torchvision",
+    "transformers",
+    "huggingface_hub",
+    "einops",
+    "safetensors",
+    "pillow",
+    "kornia",
+    "psutil",
+    "lightglue",
+    "openai",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+lightglue = { git = "https://github.com/cvg/LightGlue" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -10,6 +10,8 @@ whatchanged run before.mp4 after.mp4 -o out/
   -> out/topdown.png     (robot-style 2D occupancy diff map)
 ```
 
+**CPU-first:** the default pipeline runs on an ordinary laptop/VM CPU, with no GPU. A GPU, if available, only makes the optional high-quality reconstruction mode faster (see §2a).
+
 ---
 
 ## 1. The four ideas behind this design
@@ -17,7 +19,9 @@ whatchanged run before.mp4 after.mp4 -o out/
 These are the choices that make this approach stronger than "reconstruct twice, then diff the point clouds".
 
 ### Idea 1: Reconstruct both videos together in one pass, so they share coordinates automatically
-Keyframes from **both** videos go into a single forward pass of a feed-forward multi-view reconstruction model (VGGT by default; π³ / MapAnything as alternatives). All cameras and point maps come out in **one coordinate frame**, so there is no separate registration step to get wrong. The unchanged room usually makes up most of the pixels, so it anchors the solution.
+Keyframes from **both** videos go into a **single** reconstruction, so all cameras and depth maps come out in **one coordinate frame** and there is no separate registration step to get wrong. The unchanged room usually makes up most of the pixels, so it anchors the solution.
+- **CPU default:** joint SfM (structure-from-motion: COLMAP/pycolmap, SIFT or SuperPoint+LightGlue) over the keyframes of both videos gives the camera poses and sparse 3D points. A small **metric** monocular depth model (Depth Anything V2 Metric-Indoor Small, ~25M params) gives one dense depth map per keyframe. Each depth map is scaled to agree with the SfM points. Bonus: this gives the scene in **metres**.
+- **Optional mode:** one forward pass of a feed-forward multi-view model (VGGT; π³ / MapAnything as alternatives). It's slower and needs a lot of RAM on CPU, and is fast on a GPU. Both modes share the same `Reconstructor` interface.
 - **Refinement:** estimate a robust Sim(3) between the before-points and the after-points using only *static-consistent* points. Repeat once after removing the changed regions.
 - **Fallback if joint reconstruction gets confused by large changes:** reconstruct each video separately, then register them with cross-video feature matches (e.g. LightGlue) + RANSAC Sim(3) + ICP on static points. Both paths share the same interface, and an experiment (§7) decides which one is the default.
 
@@ -57,17 +61,28 @@ Each candidate pair is then **checked with ICP**: if the before-object's points,
 |---|---|---|
 | 0. Decode | `ffmpeg` decodes at low resolution (~5 fps candidates, model input size). Decoding is cheap; inference is what's expensive. | CPU, seconds |
 | 1. Adaptive keyframes | Score each candidate frame: **sharpness** (Laplacian variance), **parallax** since the last keyframe (sparse LK optical flow at ¼ res), **novelty** (small global embedding), **coverage gain**. Greedily keep a frame when it adds enough parallax/novelty and is sharp. **Overlap-aware:** make sure the after keyframes cover the regions seen in the before video (global-descriptor retrieval), because the change test needs views that cover the same areas. Target **16–32 keyframes per video**. | CPU, seconds |
-| 2. Joint reconstruction | One VGGT pass over all ~32–64 keyframes, producing camera poses + intrinsics + depth + confidence. Low-confidence depth is masked out. | GPU (Modal H100), ~seconds–1 min (to measure) |
-| 3. Gravity + scale | Fit the floor plane with RANSAC to get the up axis (makes yaw angles and the top-down map meaningful). Metric scale comes from a metric model (MapAnything) or the median ratio against a metric monocular depth model (MoGe-2 / Depth Pro). Fallback: an assumed camera height. | GPU/CPU, seconds |
-| 4. Ray-consistency change test | Idea 2, run in both directions, giving per-point state + evidence. | CPU/GPU, seconds |
+| 2. Joint reconstruction | **CPU default:** joint SfM over all keyframes of both videos (poses + intrinsics + sparse points), then metric depth per keyframe (Depth Anything V2 Metric-Indoor Small), scaled to the SfM points. Pixels whose depth disagrees with the SfM points or neighbouring views are masked out. **Optional:** a single VGGT pass. | CPU (benchmark in §2a) |
+| 3. Gravity + scale | Fit the floor plane with RANSAC to get the up axis (makes yaw angles and the top-down map meaningful). Metric scale comes from the median ratio between metric depth and SfM depth. Fallback: an assumed camera height. | CPU, seconds |
+| 4. Ray-consistency change test | Idea 2, run in both directions, giving per-point state + evidence. | CPU, seconds |
 | 5. Clustering | Voxelise, keep changed points with enough votes, DBSCAN, then drop tiny or thin clusters (below the depth-noise floor). | CPU, seconds |
-| 6. Object lifting + semantics | Idea 3 on ~10–30 crops. | GPU + VLM, ~seconds–1 min |
+| 6. Object lifting + semantics | Idea 3 on ~10–30 crops (SAM 2 tiny/small, DINOv2-small, CLIP on CPU; VLM via API). | CPU + API |
 | 7. Move matching | Idea 4. | CPU, seconds |
 | 8. Report | JSON, then natural language, then a self-contained `report.html`. | CPU, seconds |
 
 All intermediate outputs (keyframes, reconstruction `.npz`, clusters) are **cached**. Changing thresholds or the viewer reruns only stages 4–8, which takes seconds and needs no GPU.
 
-Illustrative target (not measured yet): two 30 s clips (~1,800 frames) → ~300 decoded candidates → ~50 keyframes for reconstruction → ~20 crops for semantics. End-to-end in a few minutes on one H100. The real per-stage runtime breakdown goes in the README.
+Illustrative target (not measured yet): two 30 s clips (~1,800 frames) → ~300 decoded candidates → ~32–50 keyframes for reconstruction → ~20 crops for semantics. Target: a few minutes end-to-end on an 8-core CPU. The real per-stage runtime breakdown goes in the README.
+
+### 2a. CPU benchmark (measured on this VM: 8-core Xeon 8375C, 31 GB RAM, no GPU)
+The primary test data is a real before/after pair recorded on a phone (`examples/room01`: the laptop was moved from the bedside table onto the bed and a cushion was removed). An early synthetic Blender room with known poses and changes (`tools/make_synthetic_room.py`: 1 moved chair, 1 removed bin, 2 added objects) was used for pipeline development; `bench/bench_recon.py` measures time, peak RAM, pose accuracy (ATE) and metric scale on it.
+
+Measured on the real example `examples/room01` (39 keyframes, see README for the full table):
+
+- **SfM + Depth Anything V2 Metric-Indoor Small (default):** all 39 keyframes registered in one model;
+  SfM ~15 s, depth ~0.7–1.3 s per frame at 392 px input (6 s per frame at the default 518 px, with only
+  ~7% median depth difference), whole pipeline ~1.5–2 min, ~2 GB peak RAM.
+- **VGGT-1B on CPU:** the checkpoint loads, but a joint pass over ~40 frames is far too slow and
+  memory-hungry for an interactive demo on this machine, so it stays the optional GPU backend.
 
 ---
 
@@ -98,9 +113,9 @@ Illustrative target (not measured yet): two 30 s clips (~1,800 frames) → ~300 
 
 ## 4. Tech stack
 - **Python 3.12 + uv**, NumPy/PyTorch, OpenCV, Open3D (RANSAC/ICP/DBSCAN/FPFH), SciPy (Hungarian)
-- **Reconstruction:** VGGT (default), behind a `Reconstructor` interface so π³ / MapAnything / MASt3R-SfM can be swapped in
-- **Semantics:** SAM 2 (masks from prompts), DINOv2 (appearance embeddings), VLM via an OpenAI-compatible API for labels and summary; Grounding DINO/CLIP offline fallback
-- **GPU:** Modal (H100) for stages 2, 3 and 6, called from the local CLI; everything else runs on CPU
+- **Reconstruction (CPU default):** pycolmap SfM (SIFT, optionally SuperPoint+LightGlue) + Depth Anything V2 Metric-Indoor Small, behind a `Reconstructor` interface; **optional** VGGT / π³ / MapAnything mode for GPU users
+- **Semantics:** SAM 2 tiny/small (masks from prompts), DINOv2-small (appearance embeddings), VLM via an OpenAI-compatible API for labels and summary; CLIP + template summary as a fully offline fallback
+- **Compute:** everything runs on CPU by default; no GPU or cloud GPU needed
 - **Viewer:** a single-file Three.js template with the point cloud embedded (decimated, quantised) so it stays a few MB
 - Model licences checked before final submission (some weights are non-commercial; fine for a challenge, but noted in the README)
 
@@ -120,7 +135,6 @@ what-changed-in-the-room/
     objects.py            # mask prompting, lifting, 3D boxes, move matching + ICP
     semantics.py          # VLM labels, NL summary, offline fallback
     report/               # build.py, template.html, topdown.py
-  modal_app.py            # GPU functions (recon, masks, embeddings)
   examples/room01/        # before.mp4, after.mp4, ground_truth.yaml, output/
   eval/                   # metrics + experiments
   docs/PLAN.md, docs/DESIGN.md  # design notes & tradeoffs (submission note)
@@ -128,7 +142,7 @@ what-changed-in-the-room/
 
 ## 6. Milestones (in order; each ends with something you can look at)
 1. **M0 Data:** you record 2–3 before/after pairs (guide in §8) and write down the real changes in `ground_truth.yaml`. Until then, I develop with a quick test clip I make myself.
-2. **M1 Shared 3D:** keyframes + joint VGGT reconstruction, producing a viewer that shows **one** fused room with the camera paths of both videos. Proves the shared coordinate frame. *(Most important checkpoint.)*
+2. **M1 Shared 3D:** keyframes + joint CPU reconstruction (SfM + metric depth), producing a viewer that shows **one** fused room with the camera paths of both videos. Proves the shared coordinate frame. *(Most important checkpoint.)*
 3. **M2 Change proposals:** ray-consistency test + clusters. The viewer shows red/green/unknown regions.
 4. **M3 Objects + moves:** SAM 2 lifting, 3D boxes, move matching + ICP, gravity + metric scale. The viewer shows arrows with displacement in metres.
 5. **M4 Semantics:** labels + natural-language report + evidence crops.
@@ -138,6 +152,8 @@ what-changed-in-the-room/
 ## 7. Risks and mitigations
 | Risk | Mitigation |
 |---|---|
+| SfM fails to put both videos in one model (too little overlap/parallax) | Overlap-aware keyframes; exhaustive matching across videos; detect split models and warn; fall back to registering two models with cross-video matches |
+| Monocular depth is inconsistent between views | Scale/shift each depth map to the SfM points; mask pixels that disagree across views; larger τ in the change test |
 | Joint reconstruction gets distorted by changed objects | Static parts dominate; confidence masking; static-consensus Sim(3) refinement; separate-then-register fallback (compared in M6) |
 | Textureless walls / glossy or glass surfaces give bad depth | Use depth confidence; these points count as "unobserved", not "changed" |
 | Scale ambiguity makes "moved 1.2 m" meaningless | Metric depth prior + floor-plane gravity; scale source reported in JSON |
@@ -154,6 +170,6 @@ what-changed-in-the-room/
 - Write down the real changes (that is the ground truth)
 
 ## 9. Open decisions
-1. **Reconstruction default:** VGGT (recommended; fast and well tested) vs MapAnything (metric scale built in). Plan: try both in M1 on the same clips and keep the better one.
+1. **Reconstruction default:** decided CPU-first: SfM + metric monocular depth as the default; VGGT stays optional (see §2a benchmark).
 2. **Semantics:** VLM through an OpenAI-compatible API (best labels/descriptions) plus an offline open-source fallback (recommended), or fully open-source only.
-3. **GPU:** Modal H100 (needs the workspace spend limit to allow compute), or another GPU you prefer.
+3. ~~GPU~~: decided CPU-only.
