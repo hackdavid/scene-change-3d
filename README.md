@@ -135,8 +135,8 @@ evidence sheet are generated from it, so text, geometry and images always agree.
 | Network | first run downloads Depth Anything V2 Metric-Indoor-Small and CLIP ViT-B/32 from Hugging Face; the VLM step calls your API |
 
 ```bash
-git clone https://github.com/hackdavid/what-changed-in-the-room.git
-cd what-changed-in-the-room
+git clone https://github.com/hackdavid/scene-change-3d.git
+cd scene-change-3d
 uv sync                 # creates .venv with CPU-only PyTorch, pycolmap, Open3D, transformers…
 ```
 
